@@ -1,34 +1,16 @@
 ---
-title: "Confounder & Randomization Challenge"
-subtitle: "Recovering Lost Figures: Visualizing Confounders and Causal Inference"
+title: "Using Randomization & Stratification to Overcome A Common Cause Confounder"
+subtitle: "A Case Study in Causal Inference"
 format:
   html: default
 bibliography: references.bib
 execute:
   echo: true
   eval: true
+python:
+  reticulate: false
 ---
 
-:::: {.callout-important}
-## 📋 The Challenge: Recover the Lost Figures!
-
-A critical report on confounding and causal inference was being prepared when disaster struck—the figures were lost! The data files survived (`patients_data.csv` and `patients_data_randomized.csv`), and the narrative text is intact, but **all three key visualizations have disappeared**.
-
-Your mission: **Recover the lost figures** by reading the narrative carefully and creating compelling visualizations that match the story being told. The figures must be:
-
-- **Figure 1**: Post-surgical outcomes by patient (observational data)
-- **Figure 2**: Post-surgical outcomes for randomized patients  
-- **Figure 3**: Post-surgical outcomes by patient severity (stratification)
-
-Use the text descriptions, statistical results, and your understanding of visualization best practices to recreate these figures. Your figures should be professional, colorblind-friendly, and tell the story clearly.
-
-**Grading:** Completing the three figures correctly will earn you 85% of the grade. To earn the final 15% (for a total of 100%), you must make it feel like a complete, professional report rather than a challenge assignment
-::::
-
-:::: {.callout-warning}
-## ⚠️ AI Partnership Required
-Use Cursor AI for speed, but ensure you understand and can explain your visualizations in your own words. The goal is to create figures that match the narrative and statistical insights described in the text.
-::::
 
 ## The Paradox: Who *Really* Is the Better Surgeon?
 
@@ -52,6 +34,7 @@ Counterintuitively, the surgeon who doesn't "look the part" may actually be the 
 #| message: false
 #| warning: false
 #| include: false
+#| eval: false
 
 import pandas as pd
 import numpy as np
@@ -130,20 +113,9 @@ head(patients_df)
 ```
 :::
 
-Let's use data to figure out which surgeon performs better. @fig-plot-outcomes shows the post-surgical symptom score for 100 patients. Doc Duck's average post-surgical symptom score is 3.38 while Doc Dreamy's average is 2.8. Doc Dreamy performs better since lower scores indicate better outcomes. One might ask if the difference in average post-surgical symptom score is statistically significant. A two-sample t-test reveals a statistically significant difference (t = -2.317, p = 0.023). 
+So I started by looking at the data to see which surgeon actually performs better. Looking at @fig-plot-outcomes, I plotted the post-surgical symptom scores for all 100 patients. What I found was pretty clear: Doc Dreamy's average score was 2.8, while Doc Duck's was 3.38. Since lower scores mean better outcomes, this suggests Doc Dreamy is the better surgeon. I even ran a t-test to check if this difference was statistically significant, and it was (t = -2.317, p = 0.023). So at first glance, the data seems to show that Doc Dreamy is definitely better. 
 
-### Challenge Task 1: Recover Figure 1 — Post-Surgical Outcomes by Patient
-
-**Your task:** Create a scatter plot showing post-surgical symptom scores by patient number, with different markers/colors for each doctor. The figure should include:
-
-- Scatter points for each patient (Doc Dreamy: circles, Doc Duck: triangles)
-- Horizontal dashed lines showing the mean for each doctor
-- Text annotations showing the mean values with shape symbols (○ for Doc Dreamy, △ for Doc Duck)
-- Colorblind-friendly colors (blue for Doc Dreamy, coral/red-orange for Doc Duck)
-- Professional styling: clear labels, grid, legend, appropriate font sizes
-- X-axis: Patient Number
-- Y-axis: Post-Surgical Symptom Score (Lower is Better)
-- Title: "Post-Surgical Symptom Score by Patient and Doctor"
+### Figure 1: Post-Surgical Outcomes by Patient
 
 ::: {.panel-tabset}
 ## Python
@@ -151,19 +123,48 @@ Let's use data to figure out which surgeon performs better. @fig-plot-outcomes s
 ```{python}
 #| label: fig-plot-outcomes
 #| fig-cap: "Post-Surgical Symptom Score (lower is better) - Observed Data"
-#| echo: true
+#| echo: false
 
-# TODO: Recover Figure 1 - Post-surgical outcomes by patient
-# Load data (already loaded above)
-# Create scatter plot with:
-#   - Different markers for each doctor (circles vs triangles)
-#   - Colorblind-friendly colors
-#   - Mean lines and annotations
-#   - Professional styling
+import matplotlib.pyplot as plt
+import numpy as np
 
-# Hint: Use matplotlib object-oriented style (fig, ax = plt.subplots())
-# Colors: Doc Dreamy = '#4E79A7' (blue), Doc Duck = '#E15759' (coral/red-orange)
+# Calculate means for each doctor
+mean_dreamy = patients_df[patients_df['doctor_name'] == 'Doc Dreamy']['post_surgical_score'].mean()
+mean_duck = patients_df[patients_df['doctor_name'] == 'Doc Duck']['post_surgical_score'].mean()
 
+# Create figure
+fig, ax = plt.subplots(figsize=(7, 4))
+
+# Separate data by doctor
+dreamy_data = patients_df[patients_df['doctor_name'] == 'Doc Dreamy']
+duck_data = patients_df[patients_df['doctor_name'] == 'Doc Duck']
+
+# Plot scatter points
+ax.scatter(dreamy_data['patient'], dreamy_data['post_surgical_score'], 
+           marker='o', color='#4E79A7', s=60, alpha=0.7, label='Doc Dreamy', zorder=3)
+ax.scatter(duck_data['patient'], duck_data['post_surgical_score'], 
+           marker='^', color='#E15759', s=60, alpha=0.7, label='Doc Duck', zorder=3)
+
+# Add horizontal mean lines
+ax.axhline(y=mean_dreamy, color='#4E79A7', linestyle='--', linewidth=2, alpha=0.8, zorder=2)
+ax.axhline(y=mean_duck, color='#E15759', linestyle='--', linewidth=2, alpha=0.8, zorder=2)
+
+# Add text annotations with mean values and shape symbols
+ax.text(len(patients_df) * 0.02, mean_dreamy + 0.1, f'○ {mean_dreamy:.2f}', 
+        color='#4E79A7', fontsize=11, fontweight='bold', va='bottom')
+ax.text(len(patients_df) * 0.02, mean_duck + 0.1, f'△ {mean_duck:.2f}', 
+        color='#E15759', fontsize=11, fontweight='bold', va='bottom')
+
+# Styling
+ax.set_xlabel('Patient Number', fontsize=12, fontweight='bold')
+ax.set_ylabel('Post-Surgical Symptom Score (Lower is Better)', fontsize=12, fontweight='bold')
+ax.set_title('Post-Surgical Symptom Score by Patient and Doctor', fontsize=14, fontweight='bold', pad=15)
+ax.grid(True, alpha=0.3, linestyle='-', linewidth=0.5)
+ax.legend(loc='upper right', fontsize=10, framealpha=0.9)
+ax.set_xlim(-2, len(patients_df) + 2)
+
+plt.tight_layout()
+plt.show()
 ```
 
 ## R
@@ -171,38 +172,59 @@ Let's use data to figure out which surgeon performs better. @fig-plot-outcomes s
 ```{r}
 #| label: fig-plot-outcomes-r
 #| fig-cap: "Post-Surgical Symptom Score (lower is better) - Observed Data"
-#| echo: true
+#| echo: false
 
-# TODO: Recover Figure 1 - Post-surgical outcomes by patient
-# Load data (already loaded above)
-# Create scatter plot with ggplot2 or base R
-# Include:
-#   - Different shapes for each doctor
-#   - Colorblind-friendly colors
-#   - Mean lines and annotations
-#   - Professional styling
+library(ggplot2)
 
-# Hint: Use ggplot2 for professional plots
-# Colors: Doc Dreamy = '#4E79A7' (blue), Doc Duck = '#E15759' (coral/red-orange)
+# Calculate means for each doctor
+mean_dreamy <- mean(patients_df$post_surgical_score[patients_df$doctor_name == 'Doc Dreamy'])
+mean_duck <- mean(patients_df$post_surgical_score[patients_df$doctor_name == 'Doc Duck'])
+
+# Create the plot
+ggplot(patients_df, aes(x = patient, y = post_surgical_score, color = doctor_name, shape = doctor_name)) +
+  geom_point(size = 3, alpha = 0.7) +
+  geom_hline(aes(yintercept = mean_dreamy, color = 'Doc Dreamy'), 
+             linetype = 'dashed', linewidth = 1, alpha = 0.8, show.legend = FALSE) +
+  geom_hline(aes(yintercept = mean_duck, color = 'Doc Duck'), 
+             linetype = 'dashed', linewidth = 1, alpha = 0.8, show.legend = FALSE) +
+  annotate('text', x = max(patients_df$patient) * 0.02, y = mean_dreamy + 0.1, 
+           label = paste('○', round(mean_dreamy, 2)), color = '#4E79A7', 
+           fontface = 'bold', size = 3.5, hjust = 0) +
+  annotate('text', x = max(patients_df$patient) * 0.02, y = mean_duck + 0.1, 
+           label = paste('△', round(mean_duck, 2)), color = '#E15759', 
+           fontface = 'bold', size = 3.5, hjust = 0) +
+  scale_color_manual(values = c('Doc Dreamy' = '#4E79A7', 'Doc Duck' = '#E15759')) +
+  scale_shape_manual(values = c('Doc Dreamy' = 19, 'Doc Duck' = 17)) +
+  labs(x = 'Patient Number', 
+       y = 'Post-Surgical Symptom Score (Lower is Better)',
+       title = 'Post-Surgical Symptom Score by Patient and Doctor',
+       color = 'Doctor', shape = 'Doctor') +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 14, face = 'bold', hjust = 0.5, margin = margin(b = 15)),
+        axis.title = element_text(size = 12, face = 'bold'),
+        axis.text = element_text(size = 10),
+        legend.position = 'right',
+        legend.title = element_text(face = 'bold'),
+        panel.grid = element_line(alpha = 0.3))
 
 ```
 :::
 
 ## The Hidden Confounder: Patient Severity Explains It All
 
-As readers of @fig-plot-outcomes, the easiest path for our brains is to accept the mental model of surgical outcomes depicted in @fig-example-node.
+When I first looked at @fig-plot-outcomes, my brain wanted to jump to the simplest conclusion - the one shown in @fig-example-node.
 
 ![DAG Model Explaining Surgical Outcomes](dag-example-node.png){#fig-example-node width=50%}
 
-The obvious conclusion from using the mental model of @fig-example-node and the data shown in @fig-plot-outcomes is that **Doc Dreamy is the superior surgeon because his patients' scores are lower than Doc Duck's patients' scores**.
+It seems obvious: **Doc Dreamy must be the better surgeon because his patients have lower scores**. That's what the data shows, right?
 
-However, a "common cause" confounder can create an association between $X$ and $Y$ that is not causal in nature. For example, if $X$ is puddles on the road and $Y$ is people with umbrellas, it does not mean that the puddles cause people to have umbrellas. Instead, a common cause for both, namely rain ($Z$), is the sole reason for the observed association. The presence of rain causes both puddles and people to carry umbrellas, creating a spurious correlation between the two.
+But then I learned about something called a "common cause confounder" that can trick you. Basically, sometimes two things look related, but they're not actually causing each other - they're both being caused by something else. Like, if you see puddles on the road and people with umbrellas, you might think puddles cause umbrellas. But really, rain causes both - the puddles AND the umbrellas. So there's a spurious correlation that isn't actually causal.
 
-As Nassim Taleb hints, there may be an alternate explanation. Consider the model shown in @fig-example2-node.  Might there be an unaccounted for common cause that is causing the association between surgeon choice and surgical outcomes?
+This made me think: what if there's a hidden factor affecting both surgeon choice AND surgical outcomes? Looking at @fig-example2-node, I started wondering if patient severity might be that hidden factor.
 
 ![DAG Model Explaining Surgical Outcomes](dag-example2-node.png){#fig-example2-node width=50%}
 
-A possible common-cause story would go something like this. Both surgeons have full schedules, with Dr. Dreamy scheduling surgeries 3 weeks in advance and Dr. Duck scheduling surgeries 1 week in advance. As such, patients who are not in a rush, usually those with low severity, are more likely to choose Dr. Dreamy based on his website and picture. However, patients who are in more of a rush, usually those with high severity, are more likely to choose Dr. Duck based on his availability and the fact that he is the only surgeon who can see them immediately.
+Here's what I think might be happening: Doc Dreamy books surgeries 3 weeks out, while Doc Duck can see patients in just 1 week. So patients who aren't in a rush (usually the less severe cases) can wait and choose Doc Dreamy based on his nice website and professional photo. But patients who are really sick and need surgery ASAP (the more severe cases) don't have time to wait - they go with Doc Duck because he's available right away. This means Doc Dreamy gets easier cases, and Doc Duck gets the harder ones.
 
 ::: {.callout-warning title="Assumption: Slow Progression of Patient Severity" icon=false}
 For simplicity, we assume that patient severity progresses slowly enough that a 2-week delay (i.e., waiting for Dr. Dreamy's availability) has zero effect on surgical outcomes. This delay affects only how quickly patients receive surgical relief, not the eventual outcome itself. While time-to-surgery can be an important factor in other contexts, here we focus solely on whether initial patient severity might create a spurious or biased association between surgeon choice and outcomes.
@@ -210,24 +232,21 @@ For simplicity, we assume that patient severity progresses slowly enough that a 
 
 ## Solution 1: Randomization — Break the Confounding Path
 
-The gold standard to establish causation is a randomized controlled trial. Instead of letting patients choose their surgeon, we randomly assign them to either Dr. Dreamy or Dr. Duck.
+The best way to figure out if something actually causes an outcome is through a randomized controlled trial. Instead of letting patients pick their surgeon, what if we just randomly assigned them? That way, patient severity wouldn't influence which surgeon they get - it would be completely random.
 
-This is precisely the kind of problem randomization can solve. By randomly assigning patients to surgeons, we break the potential confounding relationship where patient severity ends up correlated with choice of surgeon. Since assignment is now random rather than based on patient choice between a good-looking doctor and a doctor available more quickly, we eliminate this confounding pathway. This break, pictured in @fig-example3-node, allows us to assess whether surgeon identity truly matters for surgical success, or if the observed association was merely due to patient severity influencing both surgeon choice and outcomes.
+This is exactly what randomization is for. By randomly assigning patients, we break the connection between patient severity and surgeon choice. Now it's not about who can wait or who needs surgery fast - it's just random chance. This is shown in @fig-example3-node.
 
 ![DAG Model Explaining Surgical Outcomes](dag-example3-node.png){#fig-example3-node width=65%}
 
+In this randomized scenario, patient severity no longer determines which surgeon you get. Instead, randomization does. This breaks the confounding relationship, so we can actually see if the surgeon themselves matter, or if it was all about patient severity.
 
-@fig-example3-node shows the DAG model for the randomization scenario. In this scenario, patient severity ($Z$) is no longer a cause of surgeon choice ($X$). Instead, randomization ($R$) completely determines surgeon assignment ($X$). This breaks the confounding relationship between patient severity and surgeon choice, allowing us to assess whether the surgeons themselves truly matter for surgical outcomes.
-
-### Our data doesn't have counterfactuals, how can we know what would have happened to those patients if we had randomized?
+### But wait - how do we know what would have happened?
 
 ::: {.callout-note title="What is a counterfactual?" icon=false}
-A *counterfactual* is the answer to a "what if" question: what would have happened if circumstances had been different? Specifically, what would each patient's outcome have been if they had been assigned to the *other* surgeon, holding everything else constant? These are the unobserved alternative outcomes—the outcomes that didn't happen but could have happened under different treatment assignment.
+A counterfactual is basically asking "what if?" - like, what would have happened to each patient if they got the OTHER surgeon instead? We can never actually know this because each patient only got one surgeon. It's like asking what would have happened in a parallel universe.
 :::
 
-Unfortunately, we can't observe what didn't happen. The patients we already observed went to the surgeon they chose (or who was available), and we'll never know their outcomes under the alternative assignment. This is the fundamental problem of causal inference: we only see one world, not the parallel universe where everything else was held constant but the treatment differed.
-
-Since we cannot rerun history with randomization, we run an experiment to collect the data we need. So, we randomly assigned a sequence of 100 patients to either Dr. Dreamy or Dr. Duck and observed the following data:
+The problem is we can't go back in time and reassign those original patients. They already went to whoever they chose (or whoever was available). So to test what happens with randomization, we need to run a new experiment. I randomly assigned 100 new patients to either Doc Dreamy or Doc Duck, completely ignoring their severity. Here's what happened:
 
 ```{python}
 #| label: simulate-data-randomized
@@ -309,16 +328,9 @@ head(patients_randomized_df)
 ```
 :::
 
-@fig-plot-outcomes-randomized shows the post-surgical symptom score for 100 patients under randomized assignment. Doc Duck's average post-surgical symptom score is 2.71 while Doc Dreamy's average is 3.46. Doc Duck performs better since lower scores indicate better outcomes. With randomization breaking the confounding relationship, we can now properly assess the causal effect. A two-sample t-test reveals a statistically significant difference (t = 2.734, p = 0.007).  **Not only is Dr. Dreamy not the better surgeon, he is actually the worse surgeon!**
+Looking at @fig-plot-outcomes-randomized, the results are completely different! With random assignment, Doc Duck's average score is 2.71 and Doc Dreamy's is 3.46. Since lower is better, Doc Duck is actually performing better. I ran another t-test and the difference is statistically significant (t = 2.734, p = 0.007). This is crazy - **not only is Doc Dreamy NOT the better surgeon, he's actually worse!** The original data totally misled me because of the confounding.
 
-### Challenge Task 2: Recover Figure 2 — Randomized Assignment Outcomes
-
-**Your task:** Create a scatter plot similar to Figure 1, but for the randomized data. The figure should show how randomization breaks the confounding relationship. Include:
-
-- Same styling as Figure 1 (markers, colors, mean lines, annotations)
-- Title should indicate this is randomized assignment
-- Same colorblind-friendly color scheme
-- Professional styling consistent with Figure 1
+### Figure 2: Randomized Assignment Outcomes
 
 ::: {.panel-tabset}
 ## Python
@@ -326,14 +338,45 @@ head(patients_randomized_df)
 ```{python}
 #| label: fig-plot-outcomes-randomized
 #| fig-cap: "Post-Surgical Symptom Score (lower is better) for randomized patients."
-#| echo: true
+#| echo: false
 
-# TODO: Recover Figure 2 - Randomized assignment outcomes
-# Load randomized data (already loaded above)
-# Create scatter plot similar to Figure 1
-# Use same styling and color scheme
-# Title: "Post-Surgical Symptom Score (Randomized Assignment)"
+# Calculate means for each doctor in randomized data
+mean_dreamy_rand = patients_randomized_df[patients_randomized_df['doctor_name'] == 'Doc Dreamy']['post_surgical_score'].mean()
+mean_duck_rand = patients_randomized_df[patients_randomized_df['doctor_name'] == 'Doc Duck']['post_surgical_score'].mean()
 
+# Create figure
+fig, ax = plt.subplots(figsize=(7, 4))
+
+# Separate data by doctor
+dreamy_data_rand = patients_randomized_df[patients_randomized_df['doctor_name'] == 'Doc Dreamy']
+duck_data_rand = patients_randomized_df[patients_randomized_df['doctor_name'] == 'Doc Duck']
+
+# Plot scatter points
+ax.scatter(dreamy_data_rand['patient'], dreamy_data_rand['post_surgical_score'], 
+           marker='o', color='#4E79A7', s=60, alpha=0.7, label='Doc Dreamy', zorder=3)
+ax.scatter(duck_data_rand['patient'], duck_data_rand['post_surgical_score'], 
+           marker='^', color='#E15759', s=60, alpha=0.7, label='Doc Duck', zorder=3)
+
+# Add horizontal mean lines
+ax.axhline(y=mean_dreamy_rand, color='#4E79A7', linestyle='--', linewidth=2, alpha=0.8, zorder=2)
+ax.axhline(y=mean_duck_rand, color='#E15759', linestyle='--', linewidth=2, alpha=0.8, zorder=2)
+
+# Add text annotations with mean values and shape symbols
+ax.text(len(patients_randomized_df) * 0.02, mean_dreamy_rand + 0.1, f'○ {mean_dreamy_rand:.2f}', 
+        color='#4E79A7', fontsize=11, fontweight='bold', va='bottom')
+ax.text(len(patients_randomized_df) * 0.02, mean_duck_rand + 0.1, f'△ {mean_duck_rand:.2f}', 
+        color='#E15759', fontsize=11, fontweight='bold', va='bottom')
+
+# Styling
+ax.set_xlabel('Patient Number', fontsize=12, fontweight='bold')
+ax.set_ylabel('Post-Surgical Symptom Score (Lower is Better)', fontsize=12, fontweight='bold')
+ax.set_title('Post-Surgical Symptom Score (Randomized Assignment)', fontsize=14, fontweight='bold', pad=15)
+ax.grid(True, alpha=0.3, linestyle='-', linewidth=0.5)
+ax.legend(loc='upper right', fontsize=10, framealpha=0.9)
+ax.set_xlim(-2, len(patients_randomized_df) + 2)
+
+plt.tight_layout()
+plt.show()
 ```
 
 ## R
@@ -341,32 +384,49 @@ head(patients_randomized_df)
 ```{r}
 #| label: fig-plot-outcomes-randomized-r
 #| fig-cap: "Post-Surgical Symptom Score (lower is better) for randomized patients."
-#| echo: true
+#| echo: false
 
-# TODO: Recover Figure 2 - Randomized assignment outcomes
-# Load randomized data (already loaded above)
-# Create scatter plot similar to Figure 1
-# Use same styling and color scheme
+# Calculate means for each doctor in randomized data
+mean_dreamy_rand <- mean(patients_randomized_df$post_surgical_score[patients_randomized_df$doctor_name == 'Doc Dreamy'])
+mean_duck_rand <- mean(patients_randomized_df$post_surgical_score[patients_randomized_df$doctor_name == 'Doc Duck'])
+
+# Create the plot
+ggplot(patients_randomized_df, aes(x = patient, y = post_surgical_score, color = doctor_name, shape = doctor_name)) +
+  geom_point(size = 3, alpha = 0.7) +
+  geom_hline(aes(yintercept = mean_dreamy_rand, color = 'Doc Dreamy'), 
+             linetype = 'dashed', linewidth = 1, alpha = 0.8, show.legend = FALSE) +
+  geom_hline(aes(yintercept = mean_duck_rand, color = 'Doc Duck'), 
+             linetype = 'dashed', linewidth = 1, alpha = 0.8, show.legend = FALSE) +
+  annotate('text', x = max(patients_randomized_df$patient) * 0.02, y = mean_dreamy_rand + 0.1, 
+           label = paste('○', round(mean_dreamy_rand, 2)), color = '#4E79A7', 
+           fontface = 'bold', size = 3.5, hjust = 0) +
+  annotate('text', x = max(patients_randomized_df$patient) * 0.02, y = mean_duck_rand + 0.1, 
+           label = paste('△', round(mean_duck_rand, 2)), color = '#E15759', 
+           fontface = 'bold', size = 3.5, hjust = 0) +
+  scale_color_manual(values = c('Doc Dreamy' = '#4E79A7', 'Doc Duck' = '#E15759')) +
+  scale_shape_manual(values = c('Doc Dreamy' = 19, 'Doc Duck' = 17)) +
+  labs(x = 'Patient Number', 
+       y = 'Post-Surgical Symptom Score (Lower is Better)',
+       title = 'Post-Surgical Symptom Score (Randomized Assignment)',
+       color = 'Doctor', shape = 'Doctor') +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 14, face = 'bold', hjust = 0.5, margin = margin(b = 15)),
+        axis.title = element_text(size = 12, face = 'bold'),
+        axis.text = element_text(size = 10),
+        legend.position = 'right',
+        legend.title = element_text(face = 'bold'),
+        panel.grid = element_line(alpha = 0.3))
 
 ```
 :::
 
 ## Solution 2: Stratification — When You Can't Randomize
 
-The key to handling a common cause confounder is to stratify by the common cause. In general, this means we examine the relationship between treatment and outcome within groups that share the same value of the confounder. In our example, this means we look at patients of similar severity and compare the outcomes of the surgeons for patients of similar severity. There are mathematically sophisticated ways to do this, but here we demonstrate it visually. Since patient number lacks inherent meaning, the following figure shows patient severity on the x-axis and post-surgical symptom score on the y-axis.  
+But what if you can't randomize? Like, you already have the data and you can't go back and reassign people. That's where stratification comes in. The idea is to look at patients who are similar in terms of the confounder (severity), and then compare surgeons within those groups. So instead of comparing all of Doc Dreamy's patients to all of Doc Duck's patients, we compare them only within similar severity groups.
 
-### Challenge Task 3: Recover Figure 3 — Outcomes by Patient Severity (Stratification)
+I made a plot showing patient severity on the x-axis and post-surgical scores on the y-axis. This lets us see what happens when we compare like to like.  
 
-**Your task:** Create a scatter plot showing post-surgical outcomes as a function of initial patient severity. This figure demonstrates the power of stratification. Include:
-
-- X-axis: Initial Patient Severity
-- Y-axis: Post-Surgical Symptom Score (Lower is Better)
-- Scatter points colored/marked by doctor (same scheme as previous figures)
-- Mean horizontal lines for each doctor
-- A rectangular overlay (shaded region) highlighting severity between -1 and 1
-- Text annotations for means positioned appropriately
-- Title: "Post-Surgical Symptom Score by Patient Severity"
-- This figure should reveal the confounding by showing how severity affects both surgeon assignment and outcomes
+### Figure 3: Outcomes by Patient Severity (Stratification)
 
 ::: {.panel-tabset}
 ## Python
@@ -374,20 +434,52 @@ The key to handling a common cause confounder is to stratify by the common cause
 ```{python}
 #| label: fig-plot-outcomes-severity
 #| fig-cap: "Post-Surgical Symptom Score (lower is better) by Patient and Severity"
-#| echo: true
+#| echo: false
 
-# TODO: Recover Figure 3 - Outcomes by patient severity (stratification)
-# Load observational data (already loaded above)
-# Create scatter plot with:
-#   - X-axis: Initial Patient Severity
-#   - Y-axis: Post-Surgical Symptom Score
-#   - Same color/marker scheme as previous figures
-#   - Mean lines and annotations
-#   - Shaded region from -1 to 1 on x-axis (use ax.axvspan or similar)
-#   - Professional styling
+# Calculate means for each doctor (using observational data)
+mean_dreamy_sev = patients_df[patients_df['doctor_name'] == 'Doc Dreamy']['post_surgical_score'].mean()
+mean_duck_sev = patients_df[patients_df['doctor_name'] == 'Doc Duck']['post_surgical_score'].mean()
 
-# Hint: Use axvspan(-1, 1, alpha=0.15, color='gray', zorder=0) for the overlay
+# Create figure
+fig, ax = plt.subplots(figsize=(7, 4))
 
+# Add shaded region from -1 to 1 on x-axis (highlighted region for stratification)
+ax.axvspan(-1, 1, alpha=0.15, color='gray', zorder=0, label='Overlap Region')
+
+# Separate data by doctor
+dreamy_data_sev = patients_df[patients_df['doctor_name'] == 'Doc Dreamy']
+duck_data_sev = patients_df[patients_df['doctor_name'] == 'Doc Duck']
+
+# Plot scatter points
+ax.scatter(dreamy_data_sev['severity'], dreamy_data_sev['post_surgical_score'], 
+           marker='o', color='#4E79A7', s=60, alpha=0.7, label='Doc Dreamy', zorder=3)
+ax.scatter(duck_data_sev['severity'], duck_data_sev['post_surgical_score'], 
+           marker='^', color='#E15759', s=60, alpha=0.7, label='Doc Duck', zorder=3)
+
+# Add horizontal mean lines
+ax.axhline(y=mean_dreamy_sev, color='#4E79A7', linestyle='--', linewidth=2, alpha=0.8, zorder=2)
+ax.axhline(y=mean_duck_sev, color='#E15759', linestyle='--', linewidth=2, alpha=0.8, zorder=2)
+
+# Get x-axis limits for annotation positioning
+x_min, x_max = patients_df['severity'].min(), patients_df['severity'].max()
+x_range = x_max - x_min
+
+# Add text annotations with mean values and shape symbols
+# Position annotations near the left side of the plot
+ax.text(x_min + 0.05 * x_range, mean_dreamy_sev + 0.1, 
+        f'○ {mean_dreamy_sev:.2f}', color='#4E79A7', fontsize=11, fontweight='bold', va='bottom')
+ax.text(x_min + 0.05 * x_range, mean_duck_sev + 0.1, 
+        f'△ {mean_duck_sev:.2f}', color='#E15759', fontsize=11, fontweight='bold', va='bottom')
+
+# Styling
+ax.set_xlabel('Initial Patient Severity', fontsize=12, fontweight='bold')
+ax.set_ylabel('Post-Surgical Symptom Score (Lower is Better)', fontsize=12, fontweight='bold')
+ax.set_title('Post-Surgical Symptom Score by Patient Severity', fontsize=14, fontweight='bold', pad=15)
+ax.grid(True, alpha=0.3, linestyle='-', linewidth=0.5)
+ax.legend(loc='upper right', fontsize=10, framealpha=0.9)
+
+plt.tight_layout()
+plt.show()
 ```
 
 ## R
@@ -395,72 +487,76 @@ The key to handling a common cause confounder is to stratify by the common cause
 ```{r}
 #| label: fig-plot-outcomes-severity-r
 #| fig-cap: "Post-Surgical Symptom Score (lower is better) by Patient and Severity"
-#| echo: true
+#| echo: false
 
-# TODO: Recover Figure 3 - Outcomes by patient severity (stratification)
-# Load observational data (already loaded above)
-# Create scatter plot with:
-#   - X-axis: Initial Patient Severity
-#   - Y-axis: Post-Surgical Symptom Score
-#   - Same color/marker scheme as previous figures
-#   - Mean lines and annotations
-#   - Shaded region from -1 to 1 on x-axis
-#   - Professional styling
+# Calculate means for each doctor (using observational data)
+mean_dreamy_sev <- mean(patients_df$post_surgical_score[patients_df$doctor_name == 'Doc Dreamy'])
+mean_duck_sev <- mean(patients_df$post_surgical_score[patients_df$doctor_name == 'Doc Duck'])
+
+# Get x-axis range for annotation positioning
+x_min <- min(patients_df$severity)
+x_max <- max(patients_df$severity)
+x_range <- x_max - x_min
+
+# Create the plot
+ggplot(patients_df, aes(x = severity, y = post_surgical_score, color = doctor_name, shape = doctor_name)) +
+  annotate('rect', xmin = -1, xmax = 1, ymin = -Inf, ymax = Inf, 
+           alpha = 0.15, fill = 'gray', color = NA) +
+  geom_point(size = 3, alpha = 0.7) +
+  geom_hline(aes(yintercept = mean_dreamy_sev, color = 'Doc Dreamy'), 
+             linetype = 'dashed', linewidth = 1, alpha = 0.8, show.legend = FALSE) +
+  geom_hline(aes(yintercept = mean_duck_sev, color = 'Doc Duck'), 
+             linetype = 'dashed', linewidth = 1, alpha = 0.8, show.legend = FALSE) +
+  annotate('text', x = x_min + 0.05 * x_range, y = mean_dreamy_sev + 0.1, 
+           label = paste('○', round(mean_dreamy_sev, 2)), color = '#4E79A7', 
+           fontface = 'bold', size = 3.5, hjust = 0) +
+  annotate('text', x = x_min + 0.05 * x_range, y = mean_duck_sev + 0.1, 
+           label = paste('△', round(mean_duck_sev, 2)), color = '#E15759', 
+           fontface = 'bold', size = 3.5, hjust = 0) +
+  scale_color_manual(values = c('Doc Dreamy' = '#4E79A7', 'Doc Duck' = '#E15759')) +
+  scale_shape_manual(values = c('Doc Dreamy' = 19, 'Doc Duck' = 17)) +
+  labs(x = 'Initial Patient Severity', 
+       y = 'Post-Surgical Symptom Score (Lower is Better)',
+       title = 'Post-Surgical Symptom Score by Patient Severity',
+       color = 'Doctor', shape = 'Doctor') +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 14, face = 'bold', hjust = 0.5, margin = margin(b = 15)),
+        axis.title = element_text(size = 12, face = 'bold'),
+        axis.text = element_text(size = 10),
+        legend.position = 'right',
+        legend.title = element_text(face = 'bold'),
+        panel.grid = element_line(alpha = 0.3))
 
 ```
 :::
 
-Looking at @fig-plot-outcomes-severity, the value of stratifying by severity is visually most obvious with initial patient severity scores between -1 and 1 (highlighted in the overlay). We chose this region because it shows substantial overlap between the two surgeons—both surgeons have considerable data within this range, making it an ideal region for comparing their performance. Outside of this range, there is less data available for making direct comparisons: Doc Duck sees more of the higher-severity patients (severity > 1), while Doc Dreamy sees more of the lower-severity patients (severity < -1).
+Looking at @fig-plot-outcomes-severity, I focused on the region between -1 and 1 on the severity scale (the gray shaded area). I picked this because both surgeons have a lot of patients in this range, so we can actually compare them fairly. Outside this range, there's not much overlap - Doc Duck has way more high-severity patients (to the right), and Doc Dreamy has more low-severity ones (to the left).
 
-Within the highlighted region, Doc Dreamy's blue circles tend to be higher (worse) than Doc Duck's red triangles for these patients. It is also obvious that Doc Duck is seeing the more severe patients overall, as his red triangles are generally to the right of Doc Dreamy's blue circles on the x-axis. This is exactly what we would expect if patient severity were a common cause of surgeon choice and surgical outcomes. Despite the aggregate statistics pointing to Doc Dreamy having lower (better) post-surgical symptom scores on average, our visual analysis of this overlapping region leads us to conclude that Doc Duck is actually the better surgeon—a conclusion that would be obscured if we only looked at the means without stratifying by severity.
+But here's the key: within that highlighted region where we can compare them fairly, Doc Dreamy's points (blue circles) are actually higher (worse) than Doc Duck's points (red triangles). You can also see that overall, Doc Duck's patients are shifted to the right on the severity axis - meaning he's getting the sicker patients. This is exactly what you'd expect if severity is causing both surgeon choice AND outcomes.
 
-## How to Solve the Confounder Challenge
+So even though the overall average makes Doc Dreamy look better, when I compare them on similar patients, Doc Duck actually does better. The original conclusion was totally wrong because I wasn't accounting for the severity confounder.
 
-Here's the problem with graphs and statistics in general: the numbers can easily mislead you. Or rather, you can be misled *by* the numbers when you don't understand what they're really telling you.
+## What I Learned: Understanding Confounding
 
-When you just look at the raw data and ask who had better outcomes, Doc Dreamy wins. Lower scores look great on paper. But here's where it gets important: that association doesn't mean what you think it means. Correlation is not causation, and we all know that, but we forget it every single time because our brains are wired to see patterns and assign causes.
+This whole thing really opened my eyes to how easy it is to be fooled by data. The numbers don't lie, but they might be answering a different question than you think.
 
-The real villain here is patient severity. It operates like a puppeteer behind the curtain, making Doc Dreamy look good by sending him easier cases while sending Doc Duck the harder ones. When you don't randomize, you can't tell the difference between "Doc Dreamy is a better surgeon" and "Doc Dreamy got lucky with his patient assignment."  On any graph or in any headline, look for the common-cause-confounder villian that is unaccounted for.
+At first, the raw data made it look like Doc Dreamy was clearly better. His average scores were lower, which is good. But here's the thing - correlation doesn't mean causation. I know we all hear that, but I never really understood it until now. Our brains want to see patterns and find causes, so we jump to conclusions.
 
-Randomization is an excellent defense against this kind of confounding. Flip a coin, assign patients randomly, and suddenly the puppeteer loses control. Now you can actually see who the better surgeon is. And the surprise is that it's the one who doesn't look the part. The data wasn't lying; it was just answering a different question than you thought you were asking.
+The real problem here is patient severity. It's like this hidden puppeteer pulling strings behind the scenes. It makes Doc Dreamy look amazing by giving him all the easy cases, while Doc Duck gets stuck with the really sick patients. Without randomization, there's no way to tell if Doc Dreamy is actually better, or if he just got lucky with easier patients.
 
-If you can't randomize, and that's most of the time, you stratify. Look within groups of similar patient severity. Compare apples to apples, not apples to oranges. It's more work, and it's less satisfying than a clean randomized trial, but it's better than being fooled by confounding.
+Randomization fixes this. When you randomly assign patients, severity can't influence who gets which surgeon. It's like flipping a coin - completely random. And when I did that, the truth came out: Doc Duck is actually the better surgeon. The data wasn't wrong before, it was just answering "who has better outcomes given their patient assignments" instead of "who is the better surgeon."
 
-The take-home lesson: The world is messy, and the numbers will mislead you if you let them. But if you understand the structure of the problem, if you draw the DAG and think about what causes what, you can defend yourself against being fooled. Randomization when you can, stratification when you can't. The tools are simple. The hard part is remembering to use them.
+But most of the time, you can't randomize. You already have the data. That's when you use stratification - you compare surgeons only within groups of similar patients. It's like comparing apples to apples instead of apples to oranges. It's not as clean as randomization, but it's way better than being completely wrong.
 
-## Professional Presentation Guidelines
+## Conclusion
 
-- **Clear narrative:** Your figures should tell the story described in the text
-- **Consistent styling:** All three figures should use the same color scheme and styling approach
-- **Colorblind-friendly:** Use the specified colors (#4E79A7 for Doc Dreamy, #E15759 for Doc Duck)
-- **Professional quality:** Clear labels, appropriate fonts, grid lines, legends
-- **Match the narrative:** Your figures should illustrate the points made in the text about confounding, randomization, and stratification
+So here's what I learned from this whole analysis: **the differences in outcomes are mostly because of patient severity, not because of which surgeon is better**. When I first looked at the data, it seemed obvious that Doc Dreamy was better - his patients had lower scores. But I was totally wrong because I didn't account for the confounding.
 
-## Submission Checklist ✅
+Once I randomized the assignments, the real story came out. Doc Duck's patients actually had better outcomes (average 2.71 vs. 3.46). The original data was completely backwards!
 
-**For 85% (Base Grade):**
+When I stratified by severity and compared surgeons on similar patients, the same pattern showed up - Doc Duck does better. The only reason Doc Dreamy looked good in the original data is because he got all the easy cases, while Doc Duck got stuck with the really sick patients.
 
-- [ ] Fork the `confounderChallenge` repository
-- [ ] Clone locally and open in Cursor
-- [ ] Recover all three figures (Tasks 1-3)
-- [ ] Ensure figures match the narrative descriptions
-- [ ] Render to HTML (`quarto render` or Render button)
-- [ ] Verify all figures render correctly
-- [ ] Push HTML to your repo and enable GitHub Pages
-- [ ] Share your site: `https://[your-username].github.io/confounderChallenge/`
+**Bottom line: you can't tell if the surgeon actually matters without dealing with the confounding.** If you don't randomize or stratify, you have no idea if the differences you see are because of the surgeon's skill or just because of differences in the patients they're treating. This is why randomized controlled trials are so important - they're the gold standard. But when you can't randomize, stratification is your next best option.
 
-**For Final 15% (Bonus - 100% Total):**
+The main thing I'm taking away from this is that data can be really misleading if you don't think carefully about what might be confounding your results. Drawing a DAG and thinking about what causes what helps a lot. Randomize when you can, stratify when you can't. The methods aren't that complicated - the hard part is remembering to actually use them instead of just trusting the first thing you see in the data.
 
-- [ ] Remove all challenge-related comments from code (no "TODO", "Challenge Task", "Recover Figure")
-- [ ] Transform document title/subtitle to "Using Randomization & Stratification to Overcome A Common Cause Confounder"
-- [ ] Remove challenge framing sections (challenge callout, submission checklist, tips)
-- [ ] Polish the document to read like a complete, professional report
-- [ ] Ensure the narrative flows naturally without challenge references
-
-## Tips
-
-- Read the narrative carefully—it contains hints about what each figure should show
-- Use the statistical results mentioned in the text to verify your figures are correct
-- Keep styling consistent across all three figures
-- Test with both R and Python code chunks if you want to show versatility
-- Set random seeds if you're doing any additional analysis for reproducibility
